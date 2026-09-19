@@ -1,0 +1,77 @@
+{
+    "blip": {
+        "boss": "قائمة المدير",
+        "gang": "قائمة العصابة"
+    },
+    "prompt": {
+        "open": "فتح %s"
+    },
+    "common": {
+        "storage": "المخزن",
+        "outfits": "الملابس",
+        "money": "إدارة الأموال",
+        "grade": "الرتبة: %s",
+        "return": "رجوع",
+        "manage_title": "إدارة %s - %s",
+        "citizen_info": "رقم المواطن: %s - المعرّف: %s",
+        "balance_title": "الرصيد: $%s - %s",
+        "deposit": "إيداع",
+        "deposit_desc": "إيداع مال في الحساب",
+        "withdraw": "سحب",
+        "withdraw_desc": "سحب مال من الحساب",
+        "available_balance": "الرصيد المتاح: $%s",
+        "amount": "المبلغ",
+        "deposit_funds": "المبلغ المراد إيداعه",
+        "withdraw_funds": "المبلغ المراد سحبه"
+    },
+    "boss": {
+        "menu_title": "قائمة المدير - %s",
+        "manage_employees": "إدارة الموظفين",
+        "manage_employees_desc": "استعراض قائمة الموظفين",
+        "hire": "توظيف موظفين",
+        "hire_desc": "توظيف المواطنين القريبين منك",
+        "storage_desc": "فتح المخزن",
+        "outfits_desc": "استعراض الملابس المحفوظة",
+        "money_desc": "الاطلاع على رصيد حساب العمل",
+        "employees_title": "إدارة الموظفين - %s",
+        "fire": "فصل الموظف",
+        "hire_title": "توظيف موظفين - %s"
+    },
+    "gang": {
+        "menu_title": "إدارة العصابة - %s",
+        "manage_members": "إدارة أعضاء العصابة",
+        "manage_members_desc": "ترقية الأعضاء أو طردهم",
+        "recruit": "تجنيد أعضاء",
+        "recruit_desc": "تجنيد المواطنين القريبين منك",
+        "storage_desc": "فتح مخزن العصابة",
+        "outfits_desc": "تغيير الملابس",
+        "money_desc": "الاطلاع على رصيد العصابة",
+        "members_title": "إدارة أعضاء العصابة - %s",
+        "fire": "طرد العضو",
+        "recruit_title": "تجنيد أعضاء - %s"
+    },
+    "notify": {
+        "withdrawn": "تم سحب المبلغ",
+        "deposited": "تم إيداع المبلغ",
+        "account_insufficient": "لا يوجد رصيد كافٍ في الحساب",
+        "cash_insufficient": "لا تملك نقوداً كافية",
+        "promote_rank_denied": "لا يمكنك الترقية إلى هذه الرتبة",
+        "promoted": "تم تحديث الرتبة",
+        "you_were_promoted": "تمت ترقيتك",
+        "grade_missing": "هذه الرتبة غير موجودة",
+        "citizen_offline": "هذا المواطن ليس في المدينة",
+        "fire_denied": "لا يمكنك فصل هذا المواطن",
+        "employee_fired": "تم فصل الموظف",
+        "you_were_fired": "تم فصلك من العمل",
+        "you_were_fired_desc": "حظاً موفقاً.",
+        "error": "حدث خطأ ما",
+        "fire_self": "لا يمكنك فصل نفسك",
+        "hired": "تم توظيف موظف جديد",
+        "you_were_hired": "تم توظيفك",
+        "gang_member_fired": "تم طرد العضو من العصابة",
+        "you_were_expelled": "تم طردك من العصابة",
+        "gang_fire_self": "لا يمكنك طرد نفسك من العصابة",
+        "gang_recruited": "تم تجنيد عضو جديد",
+        "you_were_recruited": "لقد انضممت إلى العصابة"
+    }
+}

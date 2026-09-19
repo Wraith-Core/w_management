@@ -1,0 +1,77 @@
+{
+    "blip": {
+        "boss": "Boss Menu",
+        "gang": "Gang Menu"
+    },
+    "prompt": {
+        "open": "Open %s"
+    },
+    "common": {
+        "storage": "Storage Access",
+        "outfits": "Outfits",
+        "money": "Money Management",
+        "grade": "Grade: %s",
+        "return": "Return",
+        "manage_title": "Manage %s - %s",
+        "citizen_info": "Citizen ID: %s - ID: %s",
+        "balance_title": "Balance: $%s - %s",
+        "deposit": "Deposit",
+        "deposit_desc": "Deposit money into the account",
+        "withdraw": "Withdraw",
+        "withdraw_desc": "Withdraw money from the account",
+        "available_balance": "Available balance: $%s",
+        "amount": "Amount",
+        "deposit_funds": "Deposit funds",
+        "withdraw_funds": "Withdraw funds"
+    },
+    "boss": {
+        "menu_title": "Boss Menu - %s",
+        "manage_employees": "Manage Employees",
+        "manage_employees_desc": "Check your employees list",
+        "hire": "Hire Employees",
+        "hire_desc": "Hire nearby civilians",
+        "storage_desc": "Open the storage",
+        "outfits_desc": "See saved outfits",
+        "money_desc": "Check your company balance",
+        "employees_title": "Manage Employees - %s",
+        "fire": "Fire Employee",
+        "hire_title": "Hire Employees - %s"
+    },
+    "gang": {
+        "menu_title": "Gang Management - %s",
+        "manage_members": "Manage Gang Members",
+        "manage_members_desc": "Promote or expel gang members",
+        "recruit": "Recruit Members",
+        "recruit_desc": "Recruit nearby civilians",
+        "storage_desc": "Open the gang stash",
+        "outfits_desc": "Change clothes",
+        "money_desc": "Check your gang balance",
+        "members_title": "Manage Gang Members - %s",
+        "fire": "Expel Member",
+        "recruit_title": "Recruit Members - %s"
+    },
+    "notify": {
+        "withdrawn": "Money withdrawn",
+        "deposited": "Money deposited",
+        "account_insufficient": "There is not enough money in the account",
+        "cash_insufficient": "You do not have enough cash",
+        "promote_rank_denied": "You cannot promote to this rank",
+        "promoted": "Rank updated",
+        "you_were_promoted": "You have been promoted",
+        "grade_missing": "That rank does not exist",
+        "citizen_offline": "That citizen is not in town",
+        "fire_denied": "You cannot fire this citizen",
+        "employee_fired": "Employee fired",
+        "you_were_fired": "You have been fired",
+        "you_were_fired_desc": "Good luck out there.",
+        "error": "Something went wrong",
+        "fire_self": "You cannot fire yourself",
+        "hired": "New employee hired",
+        "you_were_hired": "You have been hired",
+        "gang_member_fired": "Gang member expelled",
+        "you_were_expelled": "You have been expelled from the gang",
+        "gang_fire_self": "You cannot expel yourself from the gang",
+        "gang_recruited": "New member recruited",
+        "you_were_recruited": "You have joined the gang"
+    }
+}
