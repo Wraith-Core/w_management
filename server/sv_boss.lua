@@ -26,8 +26,7 @@ RegisterNetEvent("w_bossmenu:server:withdrawMoney", function(amount)
 	if not amount or amount <= 0 then return end
 
 	local job = Player.PlayerData.job.name
-	if ws.RemoveMoney(job, amount) then
-		Player.Functions.AddMoney("cash", amount, 'Boss menu withdraw')
+	if ws.TransferPlayer(Player, job, amount, false, true) then
 		TriggerEvent('w_log:server:CreateLog', 'bossmenu', 'Withdraw Money', "blue", Player.PlayerData.name .. " withdrew $" .. amount .. ' (' .. job .. ')', false)
 		w.notify(src, { title = 'notify.withdrawn', description = '$' .. math.groupdigits(amount), type = 'success' })
 	else
@@ -47,9 +46,8 @@ RegisterNetEvent("w_bossmenu:server:depositMoney", function(amount)
 	amount = tonumber(amount)
 	if not amount or amount <= 0 then return end
 
-	if Player.Functions.RemoveMoney("cash", amount) then
-		local job = Player.PlayerData.job.name
-		ws.AddMoney(job, amount)
+	local job = Player.PlayerData.job.name
+	if ws.TransferPlayer(Player, job, amount, false, false) then
 		TriggerEvent('w_log:server:CreateLog', 'bossmenu', 'Deposit Money', "blue", Player.PlayerData.name .. " deposited $" .. amount .. ' (' .. job .. ')', false)
 		w.notify(src, { title = 'notify.deposited', description = '$' .. math.groupdigits(amount), type = 'success' })
 	else

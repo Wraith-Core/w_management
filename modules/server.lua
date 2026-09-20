@@ -28,82 +28,62 @@ end)
 
 local ws = {}
 
+local function ready()
+    return GetResourceState('w_centralbank') == 'started' and exports.w_centralbank:IsReady()
+end
+local function accountId(account, gang)
+    return (gang and 'gang:' or 'society:') .. tostring(account)
+end
+local function ensure(account, gang)
+    if not ready() then return nil end
+    local id = accountId(account, gang)
+    if not exports.w_centralbank:EnsureAccount(id, tostring(account), gang and 'gang' or 'society') then return nil end
+    return id
+end
+local function projection(account, gang)
+    local value = exports.w_centralbank:GetBalance(accountId(account, gang))
+    if value == nil then return end
+    local cache = gang and GangAccounts or BossAccounts
+    if cache then cache[account] = value end
+    -- Projection only; every consumer reads the central ledger.
+    MySQL.update('UPDATE management_funds SET amount = ? WHERE job_name = ? AND type = ?',
+        { value, account, gang and 'gang' or 'boss' })
+end
+local function adjust(account, amount, gang)
+    amount = tonumber(amount)
+    if not amount or amount ~= amount or math.abs(amount) == math.huge then return false end
+    local id = ensure(account, gang)
+    if not id then return false end
+    local ok, reason = exports.w_centralbank:AdjustAccount(id, amount, 'management-adjustment')
+    if ok then projection(account, gang) end
+    return ok, reason
+end
 function ws.GetAccount(account)
-	return BossAccounts[account] or 0
+    local id = ensure(account, false)
+    return id and exports.w_centralbank:GetBalance(id) or 0
 end
-
-function ws.AddMoney(account, amount)
-	if not BossAccounts[account] then
-		BossAccounts[account] = 0
-	end
-
-	BossAccounts[account] = BossAccounts[account] + amount
-	MySQL.insert('INSERT INTO management_funds (job_name, amount, type) VALUES (:job_name, :amount, :type) ON DUPLICATE KEY UPDATE amount = :amount',
-		{
-			['job_name'] = account,
-			['amount'] = BossAccounts[account],
-			['type'] = 'boss'
-		})
-end
-
-function ws.RemoveMoney(account, amount)
-	local isRemoved = false
-	if amount > 0 then
-		if not BossAccounts[account] then
-			BossAccounts[account] = 0
-		end
-
-		if BossAccounts[account] >= amount then
-			BossAccounts[account] = BossAccounts[account] - amount
-			isRemoved = true
-		end
-
-		MySQL.update('UPDATE management_funds SET amount = ? WHERE job_name = ? and type = "boss"', { BossAccounts[account], account })
-	end
-	return isRemoved
-end
-
 function ws.GetGangAccount(account)
-	return GangAccounts[account] or 0
+    local id = ensure(account, true)
+    return id and exports.w_centralbank:GetBalance(id) or 0
 end
-
-function ws.AddGangMoney(account, amount)
-	if not GangAccounts[account] then
-		GangAccounts[account] = 0
-	end
-
-	GangAccounts[account] = GangAccounts[account] + amount
-	MySQL.insert('INSERT INTO management_funds (job_name, amount, type) VALUES (:job_name, :amount, :type) ON DUPLICATE KEY UPDATE amount = :amount',
-		{
-			['job_name'] = account,
-			['amount'] = GangAccounts[account],
-			['type'] = 'gang'
-		})
+function ws.AddMoney(account, amount) amount=tonumber(amount);return amount and amount > 0 and adjust(account, amount, false) or false end
+function ws.RemoveMoney(account, amount) amount=tonumber(amount);return amount and amount > 0 and adjust(account, -amount, false) or false end
+function ws.AddGangMoney(account, amount) amount=tonumber(amount);return amount and amount > 0 and adjust(account, amount, true) or false end
+function ws.RemoveGangMoney(account, amount) amount=tonumber(amount);return amount and amount > 0 and adjust(account, -amount, true) or false end
+function ws.TransferPlayer(player, account, amount, gang, withdraw)
+    amount = tonumber(amount)
+    if not player or not amount or amount ~= amount or amount <= 0 or amount == math.huge then return false end
+    local id = ensure(account, gang)
+    if not id then return false end
+    local wallet = 'player:' .. player.PlayerData.citizenid .. ':cash'
+    local ok, reason = exports.w_centralbank:Transfer(withdraw and id or wallet, withdraw and wallet or id, amount, 'management-transfer')
+    if ok then projection(account, gang) end
+    return ok, reason
 end
-
-function ws.RemoveGangMoney(account, amount)
-	local isRemoved = false
-	if amount > 0 then
-		if not GangAccounts[account] then
-			GangAccounts[account] = 0
-		end
-
-		if GangAccounts[account] >= amount then
-			GangAccounts[account] = GangAccounts[account] - amount
-			isRemoved = true
-		end
-
-		MySQL.update('UPDATE management_funds SET amount = ? WHERE job_name = ? and type = "gang"', { GangAccounts[account], account })
-	end
-	return isRemoved
-end
-
--- The manifest's server_exports: the functions live in this module, so they are exported here.
 exports('AddMoney', ws.AddMoney)
 exports('AddGangMoney', ws.AddGangMoney)
 exports('RemoveMoney', ws.RemoveMoney)
 exports('RemoveGangMoney', ws.RemoveGangMoney)
 exports('GetAccount', ws.GetAccount)
 exports('GetGangAccount', ws.GetGangAccount)
-
 return ws

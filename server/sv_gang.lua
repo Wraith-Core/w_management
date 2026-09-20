@@ -25,8 +25,7 @@ RegisterNetEvent("w_gangmenu:server:withdrawMoney", function(amount)
 	if not amount or amount <= 0 then return end
 
 	local gang = Player.PlayerData.gang.name
-	if ws.RemoveGangMoney(gang, amount) then
-		Player.Functions.AddMoney("cash", amount, 'Gang menu withdraw')
+	if ws.TransferPlayer(Player, gang, amount, true, true) then
 		TriggerEvent('w_log:server:CreateLog', 'gangmenu', 'Withdraw Money', 'yellow', Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname .. ' successfully withdrew $' .. amount .. ' (' .. gang .. ')', false)
 		w.notify(src, { title = 'notify.withdrawn', description = '$' .. math.groupdigits(amount), type = 'success' })
 	else
@@ -45,9 +44,8 @@ RegisterNetEvent("w_gangmenu:server:depositMoney", function(amount)
 	amount = tonumber(amount)
 	if not amount or amount <= 0 then return end
 
-	if Player.Functions.RemoveMoney("cash", amount) then
-		local gang = Player.PlayerData.gang.name
-		ws.AddGangMoney(gang, amount)
+	local gang = Player.PlayerData.gang.name
+	if ws.TransferPlayer(Player, gang, amount, true, false) then
 		TriggerEvent('w_log:server:CreateLog', 'gangmenu', 'Deposit Money', 'yellow', Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname .. ' successfully deposited $' .. amount .. ' (' .. gang .. ')', false)
 		w.notify(src, { title = 'notify.deposited', description = '$' .. math.groupdigits(amount), type = 'success' })
 	else
