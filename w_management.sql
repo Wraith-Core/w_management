@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS `management_funds` (
 PRIMARY KEY (`id`),
 UNIQUE KEY `job_name` (`job_name`),
 KEY `type` (`type`)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Seed rows for the jobs and gangs defined in w_core/shared/jobs.lua and gangs.lua.
 -- Accounts for other jobs/gangs are created on first deposit (ON DUPLICATE KEY UPDATE).

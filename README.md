@@ -12,6 +12,11 @@ Wraith Core RedM Boss & Gang Management
 - Hire / Fire Employees & Gang Members
 - Promote / Demote Employees & Gang Members
 
+Members are named by their fixed citizen id (w_lib's `w.citizen`): the member list shows it,
+and promoting or dismissing works whether the member is in the game or not (an offline member's
+saved row is updated, only while he still holds that job or gang). Recruiting picks a player
+standing within 10 m; the server checks he is still near and logs him by citizen id.
+
 ## Language
 The resource follows the library language (`w_lib:locale` convar, or the player's own
 choice in the `/w_lib` dialog): Arabic or English. Every player-facing text lives in

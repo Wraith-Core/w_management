@@ -56,16 +56,32 @@ RegisterNetEvent("w_gangmenu:server:depositMoney", function(amount)
 end)
 
 -- Grade Change
+-- data.cid is the citizen id the member list carries. The list shows offline members too, so the
+-- id is resolved (w.citizen) and the grade written on the live player or on the saved row.
 RegisterNetEvent('w_gangmenu:server:GradeUpdate', function(data)
 	local src = source
 	local Player = WCore.Functions.GetPlayer(src)
-	local Employee = WCore.Functions.GetPlayerByCitizenId(data.cid)
+	if not Player then return end
 
 	if not Player.PlayerData.gang.isboss then exports.w_lib:FwNativeCoreCall('ExploitBan',src, 'Grade Update Exploiting') return end
-	if data.grade > Player.PlayerData.gang.grade.level then w.notify(src, { title = 'notify.promote_rank_denied', type = 'error' }) return end
+	local grade = type(data) == 'table' and math.tointeger(tonumber(data.grade)) or nil
+	if not grade or grade < 0 then return end
+	if grade > Player.PlayerData.gang.grade.level then w.notify(src, { title = 'notify.promote_rank_denied', type = 'error' }) return end
 
-	if Employee then
-		if Employee.Functions.SetGang(Player.PlayerData.gang.name, data.grade) then
+	local gangName = Player.PlayerData.gang.name
+	local who, reason = w.citizen.resolve(data.cid)
+	local current, Employee
+	if who then current, Employee = ws.RoleOf(who, 'gang') end
+
+	if not who then
+		w.notify(src, { title = ws.CitizenReason(reason), type = 'error' })
+	elseif not current or current.name ~= gangName then
+		-- the event names any citizen id: only a member of the leader's own gang changes grade here
+		w.notify(src, { title = 'notify.not_member', type = 'error' })
+	elseif (tonumber(current.grade and current.grade.level) or 0) > Player.PlayerData.gang.grade.level then
+		w.notify(src, { title = 'notify.grade_denied', type = 'error' })
+	elseif Employee then
+		if Employee.Functions.SetGang(gangName, grade) then
 			-- grade name in each recipient's own language (SetGang wrote name / name_ar)
 			local newGang = Employee.PlayerData.gang
 			w.notify(src, { title = 'notify.promoted', description = WCore.Shared.GradeName(newGang, src), type = 'success' })
@@ -74,76 +90,102 @@ RegisterNetEvent('w_gangmenu:server:GradeUpdate', function(data)
 			w.notify(src, { title = 'notify.grade_missing', type = 'error' })
 		end
 	else
-		w.notify(src, { title = 'notify.citizen_offline', type = 'error' })
+		-- offline: the table SetGang would write, onto his saved row, only while he is still a member
+		local role = ws.RoleFor('gang', gangName, grade)
+		if not role then
+			w.notify(src, { title = 'notify.grade_missing', type = 'error' })
+		elseif exports.w_lib:FwSetOfflineRole(who.citizenid, 'gang', role, gangName) then
+			w.notify(src, { title = 'notify.promoted', description = WCore.Shared.GradeName(role, src), type = 'success' })
+		else
+			w.notify(src, { title = 'notify.error', type = 'error' })
+		end
 	end
 	TriggerClientEvent('w_gangmenu:client:OpenMenu', src)
 end)
 
 -- Fire Member
+-- `target` is the citizen id the member list carries (online or not: w.citizen decides).
 RegisterNetEvent('w_gangmenu:server:FireMember', function(target)
 	local src = source
 	local Player = WCore.Functions.GetPlayer(src)
-	local Employee = WCore.Functions.GetPlayerByCitizenId(target)
+	if not Player then return end
 
 	if not Player.PlayerData.gang.isboss then exports.w_lib:FwNativeCoreCall('ExploitBan',src, 'Fire Employee Exploiting') return end
 
-	if Employee then
-		if target ~= Player.PlayerData.citizenid then
-			if Employee.PlayerData.gang.grade.level > Player.PlayerData.gang.grade.level then w.notify(src, { title = 'notify.fire_denied', type = 'error' }) return end
-			if Employee.Functions.SetGang("none", '0') then
-				TriggerEvent("w_log:server:CreateLog", "gangmenu", "Gang Fire", "orange", Player.PlayerData.charinfo.firstname .. " " .. Player.PlayerData.charinfo.lastname .. ' successfully fired ' .. Employee.PlayerData.charinfo.firstname .. " " .. Employee.PlayerData.charinfo.lastname .. " (" .. Player.PlayerData.gang.name .. ")", false)
-				w.notify(src, { title = 'notify.gang_member_fired', description = Employee.PlayerData.charinfo.firstname .. ' ' .. Employee.PlayerData.charinfo.lastname, type = 'success' })
-				w.notify(Employee.PlayerData.source, { title = 'notify.you_were_expelled', type = 'error' })
-			else
-				w.notify(src, { title = 'notify.error', type = 'error' })
-			end
+	local gangName = Player.PlayerData.gang.name
+	local bossName = Player.PlayerData.charinfo.firstname .. " " .. Player.PlayerData.charinfo.lastname
+	local who, reason = w.citizen.resolve(target)
+	local current, Employee
+	if who then current, Employee = ws.RoleOf(who, 'gang') end
+
+	if not who then
+		w.notify(src, { title = ws.CitizenReason(reason), type = 'error' })
+	elseif who.citizenid == Player.PlayerData.citizenid then
+		w.notify(src, { title = 'notify.gang_fire_self', type = 'error' })
+	elseif not current or current.name ~= gangName then
+		-- only a member of the leader's own gang: the event names any citizen id
+		w.notify(src, { title = 'notify.not_member', type = 'error' })
+	elseif (tonumber(current.grade and current.grade.level) or 0) > Player.PlayerData.gang.grade.level then
+		w.notify(src, { title = 'notify.fire_denied', type = 'error' })
+	elseif Employee then
+		if Employee.Functions.SetGang("none", '0') then
+			local memberName = Employee.PlayerData.charinfo.firstname .. " " .. Employee.PlayerData.charinfo.lastname
+			TriggerEvent("w_log:server:CreateLog", "gangmenu", "Gang Fire", "orange", bossName .. ' successfully fired ' .. memberName .. " [" .. who.citizenid .. "] (" .. gangName .. ")", false)
+			w.notify(src, { title = 'notify.gang_member_fired', description = memberName, type = 'success' })
+			w.notify(Employee.PlayerData.source, { title = 'notify.you_were_expelled', type = 'error' })
 		else
-			w.notify(src, { title = 'notify.gang_fire_self', type = 'error' })
+			w.notify(src, { title = 'notify.error', type = 'error' })
 		end
 	else
-		local player = exports.w_lib:FwCharacterRows('citizenid',target)
-		if player[1] ~= nil then
-			Employee = player[1]
-			Employee.gang = json.decode(Employee.gang)
-			-- Compare gang grades (the online branch above does); the job grade was a copy-paste slip.
-			if Employee.gang.grade.level > Player.PlayerData.gang.grade.level then w.notify(src, { title = 'notify.fire_denied', type = 'error' }) return end
-			-- Same shape and labels w_core's SetGang writes, taken from the shared gang table
-			-- (the label and grade name end up in the player's HUD).
-			local def = SharedGangs['none'] or {label='None',grades={}}
-			local grade0 = def.grades[0] or def.grades['0'] or {}
-			local gang = {
-				name = 'none',
-				label = def.label,
-				label_ar = def.label_ar or def.label,
-				isboss = false,
-				grade = { name = grade0.name or 'No Grades', name_ar = grade0.name_ar or grade0.name or "بدون رتبة", level = 0 },
-			}
-			if not exports.w_lib:FwSetOfflineRole(target,'gang',gang,Player.PlayerData.gang.name) then return end
-			-- Employee is a database row here (no PlayerData): read the name from the stored charinfo.
-			local charinfo = json.decode(Employee.charinfo) or {}
-			w.notify(src, { title = 'notify.gang_member_fired', description = (charinfo.firstname or '?') .. ' ' .. (charinfo.lastname or '?'), type = 'success' })
-			TriggerEvent("w_log:server:CreateLog", "gangmenu", "Gang Fire", "orange", Player.PlayerData.charinfo.firstname .. " " .. Player.PlayerData.charinfo.lastname .. ' successfully fired ' .. (charinfo.firstname or '?') .. " " .. (charinfo.lastname or '?') .. " (" .. Player.PlayerData.gang.name .. ")", false)
+		-- Same shape and labels w_core's SetGang writes, taken from the shared gang table
+		-- (the label and grade name end up in the player's HUD).
+		local def = SharedGangs['none'] or {label='None',grades={}}
+		local grade0 = def.grades[0] or def.grades['0'] or {}
+		local gang = {
+			name = 'none',
+			label = def.label,
+			label_ar = def.label_ar or def.label,
+			isboss = false,
+			grade = { name = grade0.name or 'No Grades', name_ar = grade0.name_ar or grade0.name or "بدون رتبة", level = 0 },
+		}
+		-- written only while the saved row still holds this gang (he may have left meanwhile)
+		if exports.w_lib:FwSetOfflineRole(who.citizenid,'gang',gang,gangName) then
+			local memberName = (who.name and who.name ~= '') and who.name or who.citizenid
+			w.notify(src, { title = 'notify.gang_member_fired', description = memberName, type = 'success' })
+			TriggerEvent("w_log:server:CreateLog", "gangmenu", "Gang Fire", "orange", bossName .. ' successfully fired ' .. memberName .. " [" .. who.citizenid .. "] (" .. gangName .. ")", false)
 		else
-			w.notify(src, { title = 'notify.citizen_offline', type = 'error' })
+			w.notify(src, { title = 'notify.error', type = 'error' })
 		end
 	end
 	TriggerClientEvent('w_gangmenu:client:OpenMenu', src)
 end)
 
 -- Recruit Player
+-- `recruit` is the server id of a player the nearby picker listed. The character on that seat is
+-- named by his citizen id from here on (the log), and he must still be near the leader.
 RegisterNetEvent('w_gangmenu:server:HireMember', function(recruit)
 	local src = source
 	local Player = WCore.Functions.GetPlayer(src)
-	local Target = WCore.Functions.GetPlayer(recruit)
+	if not Player then return end
 
 	if not Player.PlayerData.gang.isboss then exports.w_lib:FwNativeCoreCall('ExploitBan',src, 'Hire Employee Exploiting') return end
 
-	if Target and Target.Functions.SetGang(Player.PlayerData.gang.name, 0) then
+	local gangName = Player.PlayerData.gang.name
+	local who = w.citizen.fromSource(recruit)
+	local Target = who and WCore.Functions.GetPlayer(who.source)
+	if not Target or who.source == src then
+		w.notify(src, { title = 'notify.citizen_offline', type = 'error' })
+	elseif not ws.IsNear(src, who.source) then
+		w.notify(src, { title = 'notify.too_far', type = 'error' })
+	elseif Target.PlayerData.gang.name == gangName then
+		-- SetGang(gang, 0) on a member would drop him to the lowest grade
+		w.notify(src, { title = 'notify.already_member', type = 'error' })
+	elseif Target.Functions.SetGang(gangName, 0) then
 		local targetName = Target.PlayerData.charinfo.firstname .. ' ' .. Target.PlayerData.charinfo.lastname
 		-- gang name in each recipient's own language
 		w.notify(src, { title = 'notify.gang_recruited', description = targetName .. ' - ' .. WCore.Shared.JobLabel(Player.PlayerData.gang, src), type = 'success' })
 		w.notify(Target.PlayerData.source, { title = 'notify.you_were_recruited', description = WCore.Shared.JobLabel(Player.PlayerData.gang, Target.PlayerData.source), type = 'success' })
-		TriggerEvent('w_log:server:CreateLog', 'gangmenu', 'Recruit', 'yellow', (Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname).. ' successfully recruited ' .. targetName .. ' (' .. Player.PlayerData.gang.name .. ')', false)
+		TriggerEvent('w_log:server:CreateLog', 'gangmenu', 'Recruit', 'yellow', (Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname).. ' successfully recruited ' .. targetName .. " [" .. who.citizenid .. "]" .. ' (' .. gangName .. ')', false)
 	end
 	TriggerClientEvent('w_gangmenu:client:OpenMenu', src)
 end)

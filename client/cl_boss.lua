@@ -59,7 +59,8 @@ RegisterNetEvent('w_bossmenu:client:employeelist', function()
     for _, v in pairs(employees) do
         EmployeesMenu[#EmployeesMenu + 1] = {
             title = v.name,
-            description = WCore.Shared.GradeName(v.grade),
+            -- the grade and the member's fixed citizen id (empSource carries it), the id staff use
+            description = locale('common.member_info', WCore.Shared.GradeName(v.grade), tostring(v.empSource)),
             icon = "fa-solid fa-circle-user",
             event = "w_bossmenu:client:ManageEmployee",
             args = { player = v, work = PlayerJob }

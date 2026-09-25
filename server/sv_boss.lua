@@ -58,16 +58,33 @@ RegisterNetEvent("w_bossmenu:server:depositMoney", function(amount)
 end)
 
 -- Grade Change --
+-- data.cid is the citizen id the employee list carries. The list shows offline employees too, so
+-- the id is resolved (w.citizen) and the grade written on the live player or on the saved row.
 RegisterNetEvent('w_bossmenu:server:GradeUpdate', function(data)
 	local src = source
 	local Player = WCore.Functions.GetPlayer(src)
-	local Employee = WCore.Functions.GetPlayerByCitizenId(data.cid)
+	if not Player then return end
 
 	if not Player.PlayerData.job.isboss then exports.w_lib:FwNativeCoreCall('ExploitBan',src, 'Grade Update Exploiting') return end
-	if data.grade > Player.PlayerData.job.grade.level then w.notify(src, { title = 'notify.promote_rank_denied', type = 'error' }) return end
+	local grade = type(data) == 'table' and math.tointeger(tonumber(data.grade)) or nil
+	if not grade or grade < 0 then return end
+	if grade > Player.PlayerData.job.grade.level then w.notify(src, { title = 'notify.promote_rank_denied', type = 'error' }) return end
 
-	if Employee then
-		if Employee.Functions.SetJob(Player.PlayerData.job.name, data.grade) then
+	local jobName = Player.PlayerData.job.name
+	local who, reason = w.citizen.resolve(data.cid)
+	local current, Employee
+	if who then current, Employee = ws.RoleOf(who, 'job') end
+
+	if not who then
+		w.notify(src, { title = ws.CitizenReason(reason), type = 'error' })
+	elseif not current or current.name ~= jobName then
+		-- the event names any citizen id: only a member of the boss's own job changes grade here
+		w.notify(src, { title = 'notify.not_member', type = 'error' })
+	elseif (tonumber(current.grade and current.grade.level) or 0) > Player.PlayerData.job.grade.level then
+		-- the same rule as a dismissal: nobody rewrites the grade of someone above him
+		w.notify(src, { title = 'notify.grade_denied', type = 'error' })
+	elseif Employee then
+		if Employee.Functions.SetJob(jobName, grade) then
 			-- grade name in each recipient's own language (SetJob wrote name / name_ar)
 			local newJob = Employee.PlayerData.job
 			w.notify(src, { title = 'notify.promoted', description = WCore.Shared.GradeName(newJob, src), type = 'success' })
@@ -76,78 +93,105 @@ RegisterNetEvent('w_bossmenu:server:GradeUpdate', function(data)
 			w.notify(src, { title = 'notify.grade_missing', type = 'error' })
 		end
 	else
-		w.notify(src, { title = 'notify.citizen_offline', type = 'error' })
+		-- offline: the table SetJob would write, onto his saved row, only while he still holds this job
+		local role = ws.RoleFor('job', jobName, grade)
+		if not role then
+			w.notify(src, { title = 'notify.grade_missing', type = 'error' })
+		elseif exports.w_lib:FwSetOfflineRole(who.citizenid, 'job', role, jobName) then
+			w.notify(src, { title = 'notify.promoted', description = WCore.Shared.GradeName(role, src), type = 'success' })
+		else
+			w.notify(src, { title = 'notify.error', type = 'error' })
+		end
 	end
 	TriggerClientEvent('w_bossmenu:client:OpenMenu', src)
 end)
 
 -- Fire Employee --
+-- `target` is the citizen id the employee list carries (online or not: w.citizen decides).
 RegisterNetEvent('w_bossmenu:server:FireEmployee', function(target)
 	local src = source
 	local Player = WCore.Functions.GetPlayer(src)
-	local Employee = WCore.Functions.GetPlayerByCitizenId(target)
+	if not Player then return end
 
 	if not Player.PlayerData.job.isboss then exports.w_lib:FwNativeCoreCall('ExploitBan',src, 'Fire Employee Exploiting') return end
 
-	if Employee then
-		if target ~= Player.PlayerData.citizenid then
-			if Employee.PlayerData.job.grade.level > Player.PlayerData.job.grade.level then w.notify(src, { title = 'notify.fire_denied', type = 'error' }) return end
-			if Employee.Functions.SetJob("unemployed", 0) then
-				TriggerEvent("w_log:server:CreateLog", "bossmenu", "Job Fire", "red", Player.PlayerData.charinfo.firstname .. " " .. Player.PlayerData.charinfo.lastname .. ' successfully fired ' .. Employee.PlayerData.charinfo.firstname .. " " .. Employee.PlayerData.charinfo.lastname .. " (" .. Player.PlayerData.job.name .. ")", false)
-				w.notify(src, { title = 'notify.employee_fired', description = Employee.PlayerData.charinfo.firstname .. ' ' .. Employee.PlayerData.charinfo.lastname, type = 'success' })
-				w.notify(Employee.PlayerData.source, { title = 'notify.you_were_fired', description = 'notify.you_were_fired_desc', type = 'error' })
-			else
-				w.notify(src, { title = 'notify.error', type = 'error' })
-			end
+	local jobName = Player.PlayerData.job.name
+	local bossName = Player.PlayerData.charinfo.firstname .. " " .. Player.PlayerData.charinfo.lastname
+	local who, reason = w.citizen.resolve(target)
+	local current, Employee
+	if who then current, Employee = ws.RoleOf(who, 'job') end
+
+	if not who then
+		w.notify(src, { title = ws.CitizenReason(reason), type = 'error' })
+	elseif who.citizenid == Player.PlayerData.citizenid then
+		w.notify(src, { title = 'notify.fire_self', type = 'error' })
+	elseif not current or current.name ~= jobName then
+		-- only a member of the boss's own job: the event names any citizen id
+		w.notify(src, { title = 'notify.not_member', type = 'error' })
+	elseif (tonumber(current.grade and current.grade.level) or 0) > Player.PlayerData.job.grade.level then
+		w.notify(src, { title = 'notify.fire_denied', type = 'error' })
+	elseif Employee then
+		if Employee.Functions.SetJob("unemployed", 0) then
+			local employeeName = Employee.PlayerData.charinfo.firstname .. " " .. Employee.PlayerData.charinfo.lastname
+			TriggerEvent("w_log:server:CreateLog", "bossmenu", "Job Fire", "red", bossName .. ' successfully fired ' .. employeeName .. " [" .. who.citizenid .. "] (" .. jobName .. ")", false)
+			w.notify(src, { title = 'notify.employee_fired', description = employeeName, type = 'success' })
+			w.notify(Employee.PlayerData.source, { title = 'notify.you_were_fired', description = 'notify.you_were_fired_desc', type = 'error' })
 		else
-			w.notify(src, { title = 'notify.fire_self', type = 'error' })
+			w.notify(src, { title = 'notify.error', type = 'error' })
 		end
 	else
-		local player = exports.w_lib:FwCharacterRows('citizenid',target)
-		if player[1] ~= nil then
-			Employee = player[1]
-			Employee.job = json.decode(Employee.job)
-			if Employee.job.grade.level > Player.PlayerData.job.grade.level then w.notify(src, { title = 'notify.fire_denied', type = 'error' }) return end
-			-- Same shape and labels w_core's SetJob writes, taken from the shared job table
-			-- (the label and grade name end up in the player's HUD).
-			local def = SharedJobs['unemployed'] or {label='Unemployed',grades={}}
-			local grade0 = def.grades[0] or def.grades['0'] or {}
-			local job = {
-				name = 'unemployed',
-				label = def.label,
-				label_ar = def.label_ar or def.label,
-				type = def.type or 'none',
-				payment = grade0.payment or 30,
-				onduty = def.defaultDuty ~= false,
-				isboss = false,
-				grade = { name = grade0.name or 'No Grades', name_ar = grade0.name_ar or grade0.name or "بدون رتبة", level = 0 },
-			}
-			if not exports.w_lib:FwSetOfflineRole(target,'job',job,Player.PlayerData.job.name) then return end
-			-- Employee is a database row here (no PlayerData): read the name from the stored charinfo.
-			local charinfo = json.decode(Employee.charinfo) or {}
-			w.notify(src, { title = 'notify.employee_fired', description = (charinfo.firstname or '?') .. ' ' .. (charinfo.lastname or '?'), type = 'success' })
-			TriggerEvent("w_log:server:CreateLog", "bossmenu", "Job Fire", "red", Player.PlayerData.charinfo.firstname .. " " .. Player.PlayerData.charinfo.lastname .. ' successfully fired ' .. (charinfo.firstname or '?') .. " " .. (charinfo.lastname or '?') .. " (" .. Player.PlayerData.job.name .. ")", false)
+		-- Same shape and labels w_core's SetJob writes, taken from the shared job table
+		-- (the label and grade name end up in the player's HUD).
+		local def = SharedJobs['unemployed'] or {label='Unemployed',grades={}}
+		local grade0 = def.grades[0] or def.grades['0'] or {}
+		local job = {
+			name = 'unemployed',
+			label = def.label,
+			label_ar = def.label_ar or def.label,
+			type = def.type or 'none',
+			payment = grade0.payment or 30,
+			onduty = def.defaultDuty ~= false,
+			isboss = false,
+			grade = { name = grade0.name or 'No Grades', name_ar = grade0.name_ar or grade0.name or "بدون رتبة", level = 0 },
+		}
+		-- written only while the saved row still holds this job (he may have changed it meanwhile)
+		if exports.w_lib:FwSetOfflineRole(who.citizenid,'job',job,jobName) then
+			local employeeName = (who.name and who.name ~= '') and who.name or who.citizenid
+			w.notify(src, { title = 'notify.employee_fired', description = employeeName, type = 'success' })
+			TriggerEvent("w_log:server:CreateLog", "bossmenu", "Job Fire", "red", bossName .. ' successfully fired ' .. employeeName .. " [" .. who.citizenid .. "] (" .. jobName .. ")", false)
 		else
-			w.notify(src, { title = 'notify.citizen_offline', type = 'error' })
+			w.notify(src, { title = 'notify.error', type = 'error' })
 		end
 	end
 	TriggerClientEvent('w_bossmenu:client:OpenMenu', src)
 end)
 
 -- Recruit Player --
+-- `recruit` is the server id of a player the nearby picker listed. The character on that seat is
+-- named by his citizen id from here on (the log), and he must still be near the boss.
 RegisterNetEvent('w_bossmenu:server:HireEmployee', function(recruit)
 	local src = source
 	local Player = WCore.Functions.GetPlayer(src)
-	local Target = WCore.Functions.GetPlayer(recruit)
+	if not Player then return end
 
 	if not Player.PlayerData.job.isboss then exports.w_lib:FwNativeCoreCall('ExploitBan',src, 'Hire Employee Exploiting') return end
 
-	if Target and Target.Functions.SetJob(Player.PlayerData.job.name, 0) then
+	local jobName = Player.PlayerData.job.name
+	local who = w.citizen.fromSource(recruit)
+	local Target = who and WCore.Functions.GetPlayer(who.source)
+	if not Target or who.source == src then
+		w.notify(src, { title = 'notify.citizen_offline', type = 'error' })
+	elseif not ws.IsNear(src, who.source) then
+		w.notify(src, { title = 'notify.too_far', type = 'error' })
+	elseif Target.PlayerData.job.name == jobName then
+		-- SetJob(job, 0) on a member would drop him to the lowest grade
+		w.notify(src, { title = 'notify.already_member', type = 'error' })
+	elseif Target.Functions.SetJob(jobName, 0) then
 		local targetName = Target.PlayerData.charinfo.firstname .. ' ' .. Target.PlayerData.charinfo.lastname
 		-- job name in each recipient's own language
 		w.notify(src, { title = 'notify.hired', description = targetName .. ' - ' .. WCore.Shared.JobLabel(Player.PlayerData.job, src), type = 'success' })
 		w.notify(Target.PlayerData.source, { title = 'notify.you_were_hired', description = WCore.Shared.JobLabel(Player.PlayerData.job, Target.PlayerData.source), type = 'success' })
-		TriggerEvent('w_log:server:CreateLog', 'bossmenu', 'Recruit', "lightgreen", (Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname).. " successfully recruited " .. targetName .. ' (' .. Player.PlayerData.job.name .. ')', false)
+		TriggerEvent('w_log:server:CreateLog', 'bossmenu', 'Recruit', "lightgreen", (Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname).. " successfully recruited " .. targetName .. " [" .. who.citizenid .. "]" .. ' (' .. jobName .. ')', false)
 	end
 	TriggerClientEvent('w_bossmenu:client:OpenMenu', src)
 end)
