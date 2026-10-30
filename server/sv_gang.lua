@@ -17,8 +17,9 @@ end)
 RegisterNetEvent("w_gangmenu:server:withdrawMoney", function(amount)
 	local src = source
 	local Player = WCore.Functions.GetPlayer(src)
+	if not Player or not Player.PlayerData or not Player.PlayerData.gang then return end
 
-	if not Player.PlayerData.gang.isboss then exports.w_lib:FwNativeCoreCall('ExploitBan',src, 'Withdraw Money Exploiting') return end
+	if not Player.PlayerData.gang.isboss then w.notify(src, { title = 'notify.not_boss', type = 'error' }) return end
 
 	-- The amount comes from the client: nil / non-numeric / negative values must not reach the account code.
 	amount = tonumber(amount)
@@ -38,8 +39,9 @@ end)
 RegisterNetEvent("w_gangmenu:server:depositMoney", function(amount)
 	local src = source
 	local Player = WCore.Functions.GetPlayer(src)
+	if not Player or not Player.PlayerData or not Player.PlayerData.gang then return end
 
-	if not Player.PlayerData.gang.isboss then exports.w_lib:FwNativeCoreCall('ExploitBan',src, 'Deposit Money Exploiting') return end
+	if not Player.PlayerData.gang.isboss then w.notify(src, { title = 'notify.not_boss', type = 'error' }) return end
 
 	amount = tonumber(amount)
 	if not amount or amount <= 0 then return end
@@ -63,7 +65,7 @@ RegisterNetEvent('w_gangmenu:server:GradeUpdate', function(data)
 	local Player = WCore.Functions.GetPlayer(src)
 	if not Player then return end
 
-	if not Player.PlayerData.gang.isboss then exports.w_lib:FwNativeCoreCall('ExploitBan',src, 'Grade Update Exploiting') return end
+	if not Player.PlayerData.gang.isboss then w.notify(src, { title = 'notify.not_boss', type = 'error' }) return end
 	local grade = type(data) == 'table' and math.tointeger(tonumber(data.grade)) or nil
 	if not grade or grade < 0 then return end
 	if grade > Player.PlayerData.gang.grade.level then w.notify(src, { title = 'notify.promote_rank_denied', type = 'error' }) return end
@@ -110,7 +112,7 @@ RegisterNetEvent('w_gangmenu:server:FireMember', function(target)
 	local Player = WCore.Functions.GetPlayer(src)
 	if not Player then return end
 
-	if not Player.PlayerData.gang.isboss then exports.w_lib:FwNativeCoreCall('ExploitBan',src, 'Fire Employee Exploiting') return end
+	if not Player.PlayerData.gang.isboss then w.notify(src, { title = 'notify.not_boss', type = 'error' }) return end
 
 	local gangName = Player.PlayerData.gang.name
 	local bossName = Player.PlayerData.charinfo.firstname .. " " .. Player.PlayerData.charinfo.lastname
@@ -168,7 +170,7 @@ RegisterNetEvent('w_gangmenu:server:HireMember', function(recruit)
 	local Player = WCore.Functions.GetPlayer(src)
 	if not Player then return end
 
-	if not Player.PlayerData.gang.isboss then exports.w_lib:FwNativeCoreCall('ExploitBan',src, 'Hire Employee Exploiting') return end
+	if not Player.PlayerData.gang.isboss then w.notify(src, { title = 'notify.not_boss', type = 'error' }) return end
 
 	local gangName = Player.PlayerData.gang.name
 	local who = w.citizen.fromSource(recruit)
@@ -204,7 +206,7 @@ w.callback.register('w_gangmenu:server:GetEmployees', function(source)
 	local Player = WCore.Functions.GetPlayer(src)
 
 	if not Player then return {} end
-	if not Player.PlayerData.gang.isboss then exports.w_lib:FwNativeCoreCall('ExploitBan',src, 'Get Employees Exploiting') return end
+	if not Player.PlayerData.gang.isboss then w.notify(src, { title = 'notify.not_boss', type = 'error' }) return end
 
 	local gangname = Player.PlayerData.gang.name
 	local employees = {}

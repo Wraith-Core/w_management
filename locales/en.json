@@ -79,6 +79,7 @@
         "you_were_expelled": "You have been expelled from the gang",
         "gang_fire_self": "You cannot expel yourself from the gang",
         "gang_recruited": "New member recruited",
-        "you_were_recruited": "You have joined the gang"
+        "you_were_recruited": "You have joined the gang",
+        "not_boss": "You no longer have permission to use this panel. Close it and contact your manager if this was unexpected."
     }
 }

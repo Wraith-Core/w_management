@@ -22,8 +22,8 @@ end
 AddEventHandler('onResourceStart', function(resource) if resource == GetCurrentResourceName() then PlayerLoad() end end)
 AddEventHandler('onResourceStop', function(resource) if resource == GetCurrentResourceName() then PlayerUnload() end end)
 RegisterNetEvent('WCore:Client:OnPlayerLoaded', function() PlayerLoad() end)
-RegisterNetEvent('WCore:Client:OnGangUpdate', function(InfoGang) PlayerGang = InfoGang wc.GangLocations() end)
-RegisterNetEvent('WCore:Client:OnJobUpdate', function(JobInfo) PlayerJob = JobInfo wc.BossLocations() end)
+RegisterNetEvent('WCore:Client:OnGangUpdate', function(InfoGang) PlayerGang = InfoGang if InfoGang.isboss ~= true then lib.hideContext() end wc.GangLocations() end)
+RegisterNetEvent('WCore:Client:OnJobUpdate', function(JobInfo) PlayerJob = JobInfo if JobInfo.isboss ~= true then lib.hideContext() end wc.BossLocations() end)
 
 -- Language switch: reload the dictionary, then rebuild the blips and prompt labels.
 -- Context menus are built on open, so they pick the new language up by themselves.
