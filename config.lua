@@ -23,6 +23,14 @@ Config.GangLocations = {
 
 ---------------------------------------------
 
-WCore = w.framework:getCoreObject()
-SharedJobs = WCore.Shared.GetJobs()
-SharedGangs = WCore.Shared.GetGangs()
+SharedJobs = exports.w_lib:FwGetSharedJobs() or {}
+SharedGangs = exports.w_lib:FwGetSharedGangs() or {}
+
+function RefreshSharedRoles()
+    if next(SharedJobs) == nil then
+        SharedJobs = exports.w_lib:FwGetSharedJobs() or {}
+    end
+    if next(SharedGangs) == nil then
+        SharedGangs = exports.w_lib:FwGetSharedGangs() or {}
+    end
+end

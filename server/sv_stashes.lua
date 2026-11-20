@@ -1,8 +1,8 @@
 -- All paths derive the stash from the server's current character, never a client-supplied name.
 w.callback.register('w_management:server:OpenStash', function(src, kind)
     if kind ~= 'job' and kind ~= 'gang' then return false end
-    local player = WCore.Functions.GetPlayer(src)
-    local role = player and player.PlayerData[kind]
+    local player = exports.w_lib:FwGetPlayerData(src)
+    local role = player and player[kind]
     if not role or role.isboss ~= true then return false end
     local locations = kind == 'job' and Config.BossLocations or Config.GangLocations
     local location = locations[role.name]

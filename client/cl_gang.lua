@@ -5,7 +5,7 @@ end)
 
 -- Gang name for the menu titles in the player's language (upper-case has no effect on Arabic)
 local function GangTitle()
-    return string.upper(WCore.Shared.JobLabel(PlayerGang))
+    return string.upper(exports.w_lib:FwJobLabel(PlayerGang))
 end
 
 -- Menus / Inputs --
@@ -60,7 +60,7 @@ RegisterNetEvent('w_gangmenu:client:ManageGang', function()
         GangMembersMenu[#GangMembersMenu + 1] = {
             title = v.name,
             -- the grade and the member's fixed citizen id (empSource carries it), the id staff use
-            description = locale('common.member_info', WCore.Shared.GradeName(v.grade), tostring(v.empSource)),
+            description = locale('common.member_info', exports.w_lib:FwGradeName(v.grade), tostring(v.empSource)),
             icon = "fa-solid fa-circle-user",
             event = "w_gangmenu:lient:ManageMember",
             args = {
@@ -81,6 +81,7 @@ end)
 
 RegisterNetEvent('w_gangmenu:lient:ManageMember', function(data)
     local MemberMenu = {}
+    RefreshSharedRoles()
 
     local definition = SharedGangs[data.work.name] or {}
     local grades = definition.grades or {}
@@ -90,7 +91,7 @@ RegisterNetEvent('w_gangmenu:lient:ManageMember', function(data)
     for _, k in ipairs(levels) do
         local v = grades[k] or grades[tostring(k)]
         MemberMenu[#MemberMenu + 1] = {
-            title = WCore.Shared.GradeName(v),
+            title = exports.w_lib:FwGradeName(v),
             description = locale('common.grade', k),
             serverEvent = "w_gangmenu:server:GradeUpdate",
             icon = "fa-solid fa-file-pen",

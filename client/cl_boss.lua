@@ -5,7 +5,7 @@ end)
 
 -- Job name for the menu titles in the player's language (upper-case has no effect on Arabic)
 local function JobTitle()
-    return string.upper(WCore.Shared.JobLabel(PlayerJob))
+    return string.upper(exports.w_lib:FwJobLabel(PlayerJob))
 end
 
 -- Menus / Inputs --
@@ -60,7 +60,7 @@ RegisterNetEvent('w_bossmenu:client:employeelist', function()
         EmployeesMenu[#EmployeesMenu + 1] = {
             title = v.name,
             -- the grade and the member's fixed citizen id (empSource carries it), the id staff use
-            description = locale('common.member_info', WCore.Shared.GradeName(v.grade), tostring(v.empSource)),
+            description = locale('common.member_info', exports.w_lib:FwGradeName(v.grade), tostring(v.empSource)),
             icon = "fa-solid fa-circle-user",
             event = "w_bossmenu:client:ManageEmployee",
             args = { player = v, work = PlayerJob }
@@ -78,6 +78,7 @@ end)
 
 RegisterNetEvent('w_bossmenu:client:ManageEmployee', function(data)
     local EmployeeMenu = {}
+    RefreshSharedRoles()
 
     local definition = SharedJobs[data.work.name] or {}
     local grades = definition.grades or {}
@@ -87,7 +88,7 @@ RegisterNetEvent('w_bossmenu:client:ManageEmployee', function(data)
     for _, x in ipairs(levels) do
         local info = grades[x] or grades[tostring(x)]
         EmployeeMenu[#EmployeeMenu + 1] = {
-            title  = WCore.Shared.GradeName(info),
+            title  = exports.w_lib:FwGradeName(info),
             description = locale('common.grade', x),
             serverEvent = "w_bossmenu:server:GradeUpdate",
             icon = "fa-solid fa-file-pen",

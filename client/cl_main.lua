@@ -5,8 +5,10 @@ RegisterNetEvent('w_management:client:Wardrobe', function()
 end)
 
 local function PlayerLoad()
-    PlayerGang = WCore.Functions.GetPlayerData().gang or {}
-    PlayerJob = WCore.Functions.GetPlayerData().job or {}
+    RefreshSharedRoles()
+    local pd = exports.w_lib:FwGetPlayerData() or {}
+    PlayerGang = pd.gang or {}
+    PlayerJob = pd.job or {}
     wc.GangLocations()
     wc.BossLocations()
 end
@@ -21,9 +23,18 @@ end
 -- Resource / Player Events --
 AddEventHandler('onResourceStart', function(resource) if resource == GetCurrentResourceName() then PlayerLoad() end end)
 AddEventHandler('onResourceStop', function(resource) if resource == GetCurrentResourceName() then PlayerUnload() end end)
-RegisterNetEvent('WCore:Client:OnPlayerLoaded', function() PlayerLoad() end)
-RegisterNetEvent('WCore:Client:OnGangUpdate', function(InfoGang) PlayerGang = InfoGang if InfoGang.isboss ~= true then lib.hideContext() end wc.GangLocations() end)
-RegisterNetEvent('WCore:Client:OnJobUpdate', function(JobInfo) PlayerJob = JobInfo if JobInfo.isboss ~= true then lib.hideContext() end wc.BossLocations() end)
+exports.w_lib:FwOnCharacterLoaded(function() PlayerLoad() end)
+exports.w_lib:FwOnCharacterUnloaded(function() PlayerUnload() end)
+exports.w_lib:FwOnGangUpdate(function(InfoGang)
+    PlayerGang = InfoGang or {}
+    if PlayerGang.isboss ~= true then lib.hideContext() end
+    wc.GangLocations()
+end)
+exports.w_lib:FwOnJobUpdate(function(JobInfo)
+    PlayerJob = JobInfo or {}
+    if PlayerJob.isboss ~= true then lib.hideContext() end
+    wc.BossLocations()
+end)
 
 -- Language switch: reload the dictionary, then rebuild the blips and prompt labels.
 -- Context menus are built on open, so they pick the new language up by themselves.

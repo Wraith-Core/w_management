@@ -2,9 +2,10 @@ local GangBlips = {}
 local BossBlips = {}
 local GangPrompts = {}     -- id → w.prompt.at record
 local BossPrompts = {}
--- PlayerData is an empty table until WCore:Client:OnPlayerLoaded, so job/gang can be nil here
-PlayerJob = WCore.Functions.GetPlayerData().job or {}
-PlayerGang = WCore.Functions.GetPlayerData().gang or {}
+-- PlayerData is an empty table until character load, so job/gang can be nil here
+local initialPd = exports.w_lib:FwGetPlayerData() or {}
+PlayerJob = initialPd.job or {}
+PlayerGang = initialPd.gang or {}
 
 local wc = {}
 
